@@ -101,7 +101,7 @@ func (a *OpenCodeACP) Runtime() *RuntimeConfig {
 		Cmd:             a.ManagedNPMRuntime().CachedACPCommand(),
 		WorkingDir:      "{workspace}",
 		Env:             map[string]string{},
-		ResourceLimits:  ResourceLimits{MemoryMB: 4096, CPUCores: 2.0, Timeout: time.Hour},
+		ResourceLimits:  ResourceLimits{MemoryMB: 4096, CPUCores: 2.0, PidsLimit: 512, Timeout: time.Hour},
 		Protocol:        agent.ProtocolACP,
 		ProjectSkillDir: ".agents/skills",
 		UserSkillDir:    ".config/opencode/skills",

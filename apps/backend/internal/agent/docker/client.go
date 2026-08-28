@@ -39,6 +39,7 @@ type ContainerConfig struct {
 	NetworkMode  string
 	Memory       int64 // Memory limit in bytes
 	CPUQuota     int64 // CPU quota
+	PidsLimit    int64 // Maximum processes
 	Labels       map[string]string
 	AutoRemove   bool
 	PortBindings []PortBindingConfig
@@ -51,11 +52,20 @@ type PortBindingConfig struct {
 	HostPort      string
 }
 
+type SELinuxRelabel string
+
+const (
+	SELinuxRelabelNone    SELinuxRelabel = ""
+	SELinuxRelabelShared  SELinuxRelabel = "z"
+	SELinuxRelabelPrivate SELinuxRelabel = "Z"
+)
+
 // MountConfig holds mount configuration.
 type MountConfig struct {
-	Source   string // Host path
-	Target   string // Container path
-	ReadOnly bool
+	Source         string // Host path
+	Target         string // Container path
+	ReadOnly       bool
+	SELinuxRelabel SELinuxRelabel
 }
 
 // ContainerInfo holds information about a running container.
@@ -263,7 +273,30 @@ func (c *Client) CreateContainer(ctx context.Context, cfg ContainerConfig) (stri
 
 	// Build mounts
 	mounts := make([]mount.Mount, 0, len(cfg.Mounts))
+	binds := make([]string, 0)
+
 	for _, m := range cfg.Mounts {
+		if m.SELinuxRelabel != SELinuxRelabelNone {
+			mode := "rw"
+
+			if m.ReadOnly {
+				mode = "ro"
+			}
+
+			binds = append(
+				binds,
+				fmt.Sprintf(
+					"%s:%s:%s,%s",
+					m.Source,
+					m.Target,
+					mode,
+					m.SELinuxRelabel,
+				),
+			)
+
+			continue
+		}
+
 		mounts = append(mounts, mount.Mount{
 			Type:     mount.TypeBind,
 			Source:   m.Source,
@@ -287,15 +320,19 @@ func (c *Client) CreateContainer(ctx context.Context, cfg ContainerConfig) (stri
 		ExposedPorts: exposedPorts,
 	}
 
+	pidsLimit := cfg.PidsLimit
+
 	// Host configuration
 	hostCfg := &container.HostConfig{
+		Binds:        binds,
 		Mounts:       mounts,
 		NetworkMode:  container.NetworkMode(cfg.NetworkMode),
 		AutoRemove:   cfg.AutoRemove,
 		PortBindings: portBindings,
 		Resources: container.Resources{
-			Memory:   cfg.Memory,
-			CPUQuota: cfg.CPUQuota,
+			Memory:    cfg.Memory,
+			CPUQuota:  cfg.CPUQuota,
+			PidsLimit: &pidsLimit,
 		},
 	}
 
