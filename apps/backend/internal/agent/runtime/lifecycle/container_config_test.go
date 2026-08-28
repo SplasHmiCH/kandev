@@ -43,10 +43,41 @@ func newConfigStubAgent() *configStubAgent {
 			WorkingDir: "{workspace}",
 			Mounts:     []agents.MountTemplate{{Source: "{workspace}", Target: "/workspace"}},
 			ResourceLimits: agents.ResourceLimits{
-				MemoryMB: 256,
-				CPUCores: 0.5,
+				MemoryMB:  256,
+				CPUCores:  0.5,
+				PidsLimit: 123,
 			},
 		},
+	}
+}
+
+func TestBuildContainerConfig_PropagatesResourceLimits(t *testing.T) {
+	cm := newCMTest(t)
+
+	cfg := ContainerConfig{
+		AgentConfig: newConfigStubAgent(),
+		InstanceID:  "0123456789abcdef",
+		TaskID:      "task-1",
+	}
+
+	got, err := cm.buildContainerConfig(cfg)
+	if err != nil {
+		t.Fatalf("buildContainerConfig: %v", err)
+	}
+
+	const wantMemory int64 = 256 * 1024 * 1024
+	if got.Memory != wantMemory {
+		t.Errorf("Memory = %d, want %d", got.Memory, wantMemory)
+	}
+
+	const wantCPUQuota int64 = 50000
+	if got.CPUQuota != wantCPUQuota {
+		t.Errorf("CPUQuota = %d, want %d", got.CPUQuota, wantCPUQuota)
+	}
+
+	const wantPidsLimit int64 = 123
+	if got.PidsLimit != wantPidsLimit {
+		t.Errorf("PidsLimit = %d, want %d", got.PidsLimit, wantPidsLimit)
 	}
 }
 

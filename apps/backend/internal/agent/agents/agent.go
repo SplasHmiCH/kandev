@@ -286,9 +286,10 @@ type MountTemplate struct {
 
 // ResourceLimits defines resource constraints.
 type ResourceLimits struct {
-	MemoryMB int64         `json:"memory_mb"`
-	CPUCores float64       `json:"cpu_cores"`
-	Timeout  time.Duration `json:"timeout"`
+	MemoryMB  int64         `json:"memory_mb"`
+	CPUCores  float64       `json:"cpu_cores"`
+	PidsLimit int64         `json:"pids_limit"`
+	Timeout   time.Duration `json:"timeout"`
 }
 
 // SessionConfig defines session resumption behaviour.

@@ -115,7 +115,7 @@ func (a *CodexACP) Runtime() *RuntimeConfig {
 		Mounts: []MountTemplate{
 			{Source: "{workspace}", Target: "/workspace"},
 		},
-		ResourceLimits:  ResourceLimits{MemoryMB: 4096, CPUCores: 2.0, Timeout: time.Hour},
+		ResourceLimits:  ResourceLimits{MemoryMB: 4096, CPUCores: 2.0, PidsLimit: 512, Timeout: time.Hour},
 		Protocol:        agent.ProtocolACP,
 		ProjectSkillDir: ".agents/skills",
 		UserSkillDir:    ".codex/skills",

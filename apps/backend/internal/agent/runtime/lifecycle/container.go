@@ -464,9 +464,10 @@ func (cm *ContainerManager) buildContainerConfig(config ContainerConfig) (docker
 			return docker.ContainerConfig{}, fmt.Errorf("agentctl linux binary not found: %w", err)
 		}
 		mounts = append(mounts, docker.MountConfig{
-			Source:   agentctlPath,
-			Target:   "/usr/local/bin/agentctl",
-			ReadOnly: true,
+			Source:         agentctlPath,
+			Target:         "/usr/local/bin/agentctl",
+			ReadOnly:       true,
+			SELinuxRelabel: docker.SELinuxRelabelShared,
 		})
 	}
 
@@ -496,6 +497,7 @@ func (cm *ContainerManager) buildContainerConfig(config ContainerConfig) (docker
 	// Calculate resource limits
 	memoryBytes := rt.ResourceLimits.MemoryMB * 1024 * 1024
 	cpuQuota := int64(rt.ResourceLimits.CPUCores * 100000) // Docker CPU quota
+	pidsLimit := rt.ResourceLimits.PidsLimit
 
 	containerName := fmt.Sprintf("kandev-agent-%s", config.InstanceID[:8])
 
@@ -550,6 +552,7 @@ exec /usr/local/bin/agentctl`,
 		NetworkMode:  cm.networkName,
 		Memory:       memoryBytes,
 		CPUQuota:     cpuQuota,
+		PidsLimit:    pidsLimit,
 		Labels: map[string]string{
 			"kandev.managed":             boolStringTrue,
 			"kandev.instance_id":         config.InstanceID,
@@ -635,9 +638,10 @@ func (cm *ContainerManager) expandMounts(templates []agents.MountTemplate, works
 	sessionDirTarget := cm.commandBuilder.GetSessionDirTarget(ag)
 	if sessionDirSource != "" && sessionDirTarget != "" {
 		mounts = append(mounts, docker.MountConfig{
-			Source:   sessionDirSource,
-			Target:   sessionDirTarget,
-			ReadOnly: false,
+			Source:         sessionDirSource,
+			Target:         sessionDirTarget,
+			ReadOnly:       false,
+			SELinuxRelabel: docker.SELinuxRelabelPrivate,
 		})
 		cm.logger.Debug("added session directory mount",
 			zap.String("source", sessionDirSource),
